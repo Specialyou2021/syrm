@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>RM Photo Upload</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#F4F3EF;--surface:#fff;--surface2:#F8F7F3;--border:#E4E2DA;--text:#1A1917;--muted:#7A7870;--green:#166534;--green-bg:#DCFCE7;--red:#991B1B;--red-bg:#FEE2E2;--blue:#1D4ED8;--blue-bg:#DBEAFE}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:100px}
+
+.header{background:var(--text);color:#fff;padding:16px 20px 14px;position:sticky;top:0;z-index:100}
+.header-top{display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:16px;font-weight:600}
+.header-sub{font-size:11px;color:#A8A49A;margin-top:3px;font-family:'DM Mono',monospace}
+.progress-bar{height:3px;background:#333;margin-top:12px;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:#fff;border-radius:2px;transition:width 0.4s ease}
+
+.steps-nav{display:flex;gap:6px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border)}
+.step-pill{font-size:11px;font-weight:500;padding:5px 12px;border-radius:20px;border:1px solid var(--border);color:var(--muted);background:var(--bg);font-family:'DM Mono',monospace}
+.step-pill.active{background:var(--text);color:#fff;border-color:var(--text)}
+.step-pill.done{background:var(--green-bg);color:var(--green);border-color:#BBF7D0}
+
+.section{display:none;padding:18px}
+.section.active{display:block}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px}
+.card-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px}
+
+/* RM Lookup */
+.lookup-box{background:var(--blue-bg);border:1px solid #BFDBFE;border-radius:14px;padding:18px;margin-bottom:14px}
+.lookup-title{font-size:12px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
+.rm-input{width:100%;padding:14px;border:1px solid #BFDBFE;border-radius:10px;font-family:'DM Mono',monospace;font-size:20px;font-weight:700;letter-spacing:3px;text-transform:uppercase;background:#fff;outline:none;color:var(--text)}
+.rm-input:focus{border-color:var(--blue)}
+.rm-found{display:none;margin-top:12px;padding:14px;background:#fff;border-radius:10px;border:1px solid #BFDBFE}
+.rm-found.show{display:block}
+.rm-found-name{font-size:17px;font-weight:600}
+.rm-notfound{display:none;margin-top:10px;padding:10px 12px;background:var(--red-bg);border-radius:8px;font-size:13px;color:var(--red);border:1px solid #FCA5A5}
+.rm-notfound.show{display:block}
+
+/* Empty state */
+.empty-state{text-align:center;padding:50px 20px}
+.empty-icon{font-size:48px;margin-bottom:14px}
+.empty-title{font-size:17px;font-weight:600;margin-bottom:8px}
+.empty-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px}
+.import-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 24px;background:var(--text);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;position:relative}
+.import-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* Photo */
+.upload-zone{border:2px dashed var(--border);border-radius:14px;padding:36px 20px;text-align:center;background:var(--surface2);cursor:pointer;position:relative}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:44px;margin-bottom:10px}
+.upload-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.upload-sub{font-size:13px;color:var(--muted)}
+.preview-wrap{display:none;margin-top:14px;position:relative;border-radius:12px;overflow:hidden;aspect-ratio:4/3;background:var(--border)}
+.preview-wrap img{width:100%;height:100%;object-fit:cover}
+.preview-remove{position:absolute;top:8px;right:8px;width:28px;height:28px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.notes-input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--surface2);resize:none;outline:none;color:var(--text)}
+.notes-input:focus{border-color:var(--text)}
+
+/* Bottom bar */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;padding:14px 20px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;z-index:100}
+.btn-back{padding:14px 20px;border:1px solid var(--border);border-radius:12px;background:var(--bg);font-size:15px;font-weight:500;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif}
+.btn-next{flex:1;padding:14px;border:none;border-radius:12px;background:var(--text);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-next.green{background:#16A34A}
+.btn-next:disabled{opacity:0.5;pointer-events:none}
+
+/* Settings */
+.gear-btn{background:none;border:none;cursor:pointer;color:#A8A49A;padding:4px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end}
+.overlay.show{display:flex}
+.sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 44px;width:100%;max-height:85vh;overflow-y:auto}
+.sheet-title{font-size:17px;font-weight:600;margin-bottom:20px}
+.sheet-section{margin-bottom:20px}
+.sheet-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
+.sheet-input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:'DM Mono',monospace;outline:none;background:var(--surface2)}
+.sheet-input:focus{border-color:var(--text)}
+.csv-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px dashed var(--border);border-radius:8px;font-size:13px;color:var(--muted);cursor:pointer;background:var(--surface2);position:relative;margin-top:4px}
+.csv-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.csv-ok{font-size:12px;color:var(--green);margin-top:8px;font-weight:500;display:none}
+.rm-badge{display:inline-flex;align-items:center;background:var(--green-bg);color:var(--green);font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;margin-left:8px;font-family:'DM Mono',monospace}
+.btn-save{width:100%;margin-top:8px;padding:15px;border:none;border-radius:12px;background:var(--text);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* Success */
+.success{display:none;padding:50px 20px;text-align:center}
+.success.show{display:block}
+.success-icon{width:76px;height:76px;background:var(--green-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px}
+.success-title{font-size:24px;font-weight:600;margin-bottom:8px}
+.success-sub{font-size:15px;color:var(--muted);margin-bottom:24px}
+.success-meta{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:left;margin-bottom:24px}
+.meta-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.meta-row:last-child{border-bottom:none}
+.meta-label{color:var(--muted)}
+.meta-val{font-weight:500;font-family:'DM Mono',monospace;font-size:12px;text-align:right;max-width:60%}
+.btn-new{width:100%;padding:16px;border:none;border-radius:12px;background:var(--text);color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:500;z-index:400;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- Settings overlay -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="sheet-title">⚙ Settings</div>
+
+    <div class="sheet-section">
+      <div class="sheet-label">
+        RM Master Data
+        <span class="rm-badge" id="rmBadge" style="display:none"></span>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5">CSV format: <b>RM Code, RM Name</b> (no header)</p>
+      <label class="csv-btn">
+        <input type="file" accept=".csv" onchange="importCSV(this)">
+        📂 Import CSV
+      </label>
+      <div class="csv-ok" id="csvOk"></div>
+    </div>
+
+    <button class="btn-save" onclick="saveSettings()">Save & Close</button>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="logo">RM Photo Upload</div>
+      <div class="header-sub" id="stepLabel">Step 1 of 2</div>
+    </div>
+    <button class="gear-btn" onclick="openSettings()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:50%"></div></div>
+</div>
+
+<div class="steps-nav">
+  <div class="step-pill active" id="pill1">01 RM Code</div>
+  <div class="step-pill" id="pill2">02 Photo</div>
+</div>
+
+<!-- Step 1 -->
+<div class="section active" id="sec1">
+  <!-- No data -->
+  <div id="noData">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No RM Data</div>
+      <div class="empty-sub">Import your RM master CSV to start uploading photos.</div>
+      <label class="import-btn">
+        <input type="file" accept=".csv" onchange="importCSV(this)">
+        📂 Import CSV
+      </label>
+    </div>
+  </div>
+  <!-- Lookup -->
+  <div id="lookupArea" style="display:none">
+    <div class="lookup-box">
+      <div class="lookup-title">Product Lookup</div>
+      <input class="rm-input" id="rmInput" type="text" placeholder="SYRM0001"
+        autocomplete="off" autocapitalize="characters" oninput="lookupRM(this.value)">
+      <div class="rm-found" id="rmFound">
+        <div class="rm-found-name" id="rmFoundName"></div>
+      </div>
+      <div class="rm-notfound" id="rmNotFound">No RM found for this code</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div class="section" id="sec2">
+  <div class="card">
+    <div class="card-title">📷 Photo</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" accept="image/*" id="imgInput" onchange="handlePhoto(this)">
+      <div class="upload-icon">📷</div>
+      <div class="upload-title">Take Photo or Upload</div>
+      <div class="upload-sub">Tap to open camera or gallery</div>
+    </div>
+    <div class="preview-wrap" id="previewWrap">
+      <img id="previewImg">
+      <button class="preview-remove" onclick="removePhoto()">×</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Notes</div>
+    <textarea class="notes-input" id="notes" rows="3" placeholder="Optional remarks..."></textarea>
+  </div>
+</div>
+
+<!-- Success -->
+<div class="success" id="successScreen">
+  <div class="success-icon">✓</div>
+  <div class="success-title">Saved!</div>
+  <div class="success-sub">Photo saved to Drive, data logged in Sheet.</div>
+  <div class="success-meta" id="successMeta"></div>
+  <button class="btn-new" onclick="reset()">New Entry</button>
+</div>
+
+<!-- Bottom bar -->
+<div class="bottom-bar" id="bottomBar">
+  <button class="btn-back" id="btnBack" onclick="prevStep()" style="display:none">← Back</button>
+  <button class="btn-next" id="btnNext" onclick="nextStep()">Continue →</button>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwf_elh_5bu6YMKC7CG1p8YSeC6twOjYsELF7_cpR-KUfEdJPT7zzQahqRLlPBoOteeaA/exec";
+let MASTER = {};
+let step = 1, photo = null, currentRM = null;
+
+// ── Init ──────────────────────────────────────────────────────
+window.onload = () => {
+  const m = localStorage.getItem("rmMaster");
+  if (m) { try { MASTER = JSON.parse(m); } catch(e){} }
+  checkData();
+  updateBadge();
+};
+
+function checkData() {
+  const has = Object.keys(MASTER).length > 0;
+  document.getElementById("noData").style.display      = has ? "none"  : "block";
+  document.getElementById("lookupArea").style.display  = has ? "block" : "none";
+}
+
+// ── Settings ──────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById("csvOk").style.display = "none";
+  document.getElementById("overlay").classList.add("show");
+}
+function saveSettings() {
+  document.getElementById("overlay").classList.remove("show");
+  toast("Saved!");
+}
+document.getElementById("overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("overlay"))
+    document.getElementById("overlay").classList.remove("show");
+});
+
+// ── CSV ───────────────────────────────────────────────────────
+function importCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.trim().split("\n");
+    const m = {};
+    let n = 0;
+    lines.forEach(line => {
+      const parts = line.split(",").map(s => s.trim().replace(/^"|"$/g,""));
+      if (parts.length >= 2 && parts[0] && !parts[0].toLowerCase().includes("rm code")) {
+        m[parts[0].toUpperCase()] = parts[1];
+        n++;
+      }
+    });
+    if (n > 0) {
+      MASTER = m;
+      localStorage.setItem("rmMaster", JSON.stringify(MASTER));
+      updateBadge();
+      checkData();
+      document.getElementById("csvOk").textContent = "✓ " + n + " RMs loaded";
+      document.getElementById("csvOk").style.display = "block";
+      toast(n + " RMs loaded!");
+    } else {
+      toast("CSV error — check format");
+    }
+  };
+  reader.readAsText(file);
+  input.value = "";
+}
+
+function updateBadge() {
+  const n = Object.keys(MASTER).length;
+  const b = document.getElementById("rmBadge");
+  b.textContent = n + " RMs";
+  b.style.display = n > 0 ? "inline-flex" : "none";
+}
+
+// ── RM Lookup ─────────────────────────────────────────────────
+function lookupRM(val) {
+  const code = val.trim().toUpperCase();
+  const name = MASTER[code];
+  document.getElementById("rmFound").classList.remove("show");
+  document.getElementById("rmNotFound").classList.remove("show");
+  currentRM = null;
+  if (!code) return;
+  if (name) {
+    document.getElementById("rmFoundName").textContent = name;
+    document.getElementById("rmFound").classList.add("show");
+    currentRM = { code, name };
+  } else {
+    document.getElementById("rmNotFound").classList.add("show");
+  }
+}
+
+// ── Photo ─────────────────────────────────────────────────────
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    photo = e.target.result;
+    document.getElementById("previewImg").src = photo;
+    document.getElementById("previewWrap").style.display = "block";
+    document.getElementById("uploadZone").style.display  = "none";
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+function removePhoto() {
+  photo = null;
+  document.getElementById("previewWrap").style.display = "none";
+  document.getElementById("uploadZone").style.display  = "block";
+}
+
+// ── Navigation ────────────────────────────────────────────────
+function nextStep() {
+  if (step === 1) {
+    if (!currentRM) { toast("Enter a valid RM Code"); return; }
+    step = 2; updateUI();
+  } else {
+    submit();
+  }
+}
+function prevStep() {
+  if (step > 1) { step--; updateUI(); }
+}
+function updateUI() {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.getElementById("sec" + step).classList.add("active");
+  ["pill1","pill2"].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove("active","done");
+    if (i + 1 === step) el.classList.add("active");
+    else if (i + 1 < step) el.classList.add("done");
+  });
+  document.getElementById("stepLabel").textContent = "Step " + step + " of 2";
+  document.getElementById("progressFill").style.width = (step / 2 * 100) + "%";
+  document.getElementById("btnBack").style.display = step > 1 ? "block" : "none";
+  const btn = document.getElementById("btnNext");
+  btn.textContent = step === 2 ? "Submit ✓" : "Continue →";
+  btn.className   = step === 2 ? "btn-next green" : "btn-next";
+  window.scrollTo(0, 0);
+}
+
+// ── Submit ────────────────────────────────────────────────────
+function compress(dataUrl, maxW, q) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL("image/jpeg", q));
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function submit() {
+  if (!photo)      { toast("Add a photo first"); return; }
+
+  const btn = document.getElementById("btnNext");
+  btn.disabled = true;
+  btn.textContent = "Uploading...";
+
+  const compressed = await compress(photo, 800, 0.65);
+  const imgBase64  = compressed.split(",")[1];
+
+  const body = JSON.stringify({
+    code:  currentRM.code,
+    name:  currentRM.name,
+    notes: document.getElementById("notes").value.trim(),
+    img:   imgBase64,
+    fn:    currentRM.code + "_" + Date.now() + ".jpg"
+  });
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method:  "POST",
+      mode:    "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body:    body
+    });
+    showSuccess();
+  } catch(err) {
+    btn.disabled = false;
+    btn.textContent = "Submit ✓";
+    toast("Network error");
+  }
+}
+
+function showSuccess() {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.getElementById("successScreen").classList.add("show");
+  document.getElementById("bottomBar").style.display = "none";
+  document.querySelector(".steps-nav").style.display = "none";
+  document.getElementById("successMeta").innerHTML =
+    row("RM Code", currentRM.code) +
+    row("RM Name", currentRM.name) +
+    row("Date",    new Date().toLocaleDateString("en-IN")) +
+    row("Photo",   "✓ Uploaded");
+}
+function row(l, v) {
+  return '<div class="meta-row"><span class="meta-label">'+l+'</span><span class="meta-val">'+v+'</span></div>';
+}
+
+function reset() {
+  step = 1; currentRM = null; photo = null;
+  document.getElementById("rmInput").value  = "";
+  document.getElementById("notes").value    = "";
+  document.getElementById("rmFound").classList.remove("show");
+  document.getElementById("rmNotFound").classList.remove("show");
+  document.getElementById("previewWrap").style.display = "none";
+  document.getElementById("uploadZone").style.display  = "block";
+  document.getElementById("successScreen").classList.remove("show");
+  document.getElementById("bottomBar").style.display   = "flex";
+  document.querySelector(".steps-nav").style.display   = "flex";
+  updateUI();
+}
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+</script>
+</body>
+</html>
